@@ -4,6 +4,45 @@
 extern "C"
 _declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
 
+GLfloat point[] = {
+    0.0f, 0.5f, 0.0f,
+    0.5f, -0.5f, 0.0f,
+    -0.5f, -0.5f, 0.0f
+}; //координаты точек
+
+GLfloat colors[] = {
+    1.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 1.0f
+}; //массив для цветов точек
+
+//далее нужно написать vertex шейдеры позиций и и цветов на GLSL
+
+const char* vertex_shader =
+"#version 460\n"
+"layout(location = 0) in vec3 vertex_position;"
+"layout(location = 1) in vec3 vertex_color;"
+"out vec color"
+"void main() {"
+"   color = vertex_color;"
+"   gl_Position = vec4(vertex_position, 1.0f);"
+"}";
+
+//фрагментный шейдер
+
+const char* fragment_shader =
+"#version 460\n"
+"in vec3 color;"
+"out vec4 frag_color;"
+"void main() {"
+"   frag_color = vec4(color, 1.0f);"
+"}";
+
+/*теперь эти шейдеры нужно скомпилировать и передать видеокарте,
+так как мы задали глобальные переменные, мы их передадим в наш мейн
+где они будут уже обрабатываться функциями встроенными */
+
+
 int g_windowSizeX = 640;
 int g_windowSizeY = 480;
 
@@ -57,6 +96,22 @@ int main(void)
 	
 	glClearColor(0, 1, 0, 1);
 	
+    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vs, 1, &vertex_shader, nullptr); //показали где брать код шейдеров для предыдущей переменной
+    glCompileShader(vs);
+
+    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fs, 1, &fragment_shader, nullptr);
+    glCompileShader(fs);
+
+    GLuint shader_program = glCreateProgram(); //возвращает идентификатор программы
+    glAttachShader(shader_program, vs);
+    glAttachShader(shader_program, fs);
+    glLineWidth(shader_program);
+
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+
     /* цикл отрисовки (пока окно не должно быть закрыто, оно и не будет!) */
     while (!glfwWindowShouldClose(pwindow))
     {
