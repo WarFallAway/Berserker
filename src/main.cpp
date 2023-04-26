@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "Renderer/ShaderProgram.h"
+#include "Resources/ResourceManager.h"
 
 extern "C"
 _declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -19,31 +20,8 @@ GLfloat colors[] = {
     0.0f, 0.0f, 1.0f
 }; //массив для цветов точек
 
-//далее нужно написать vertex шейдеры позиций и и цветов на GLSL
 
-const char* vertex_shader =
-"#version 460\n"
-"layout(location = 0) in vec3 vertex_position;"
-"layout(location = 1) in vec3 vertex_color;"
-"out vec3 color;"
-"void main() {"
-"   color = vertex_color;"
-"   gl_Position = vec4(vertex_position, 1.0f);"
-"}";
 
-//фрагментный шейдер
-
-const char* fragment_shader =
-"#version 460\n"
-"in vec3 color;"
-"out vec4 frag_color;"
-"void main() {"
-"   frag_color = vec4(color, 1.0f);"
-"}";
-
-/*теперь эти шейдеры нужно скомпилировать и передать видеокарте,
-так как мы задали глобальные переменные, мы их передадим в наш мейн
-где они будут уже обрабатываться функциями встроенными */
 
 
 int g_windowSizeX = 640;
@@ -61,9 +39,9 @@ void glfwKeyCallback(GLFWwindow* pWindow, int key, int scancode, int action, int
     }
 }
 
-int main(void)
+int main(int argc, char* argv[])
 {
-    
+
 
     /* Инициализация джеэльфэвэ */
     if (!glfwInit()) {
@@ -99,61 +77,71 @@ int main(void)
 	
 	glClearColor(1, 1, 0, 1);
 	
-    std::string vertexShader(vertex_shader);
-    std::string fragmentShader(fragment_shader);
-    Renderer::ShaderProgram shaderProgram(vertexShader, fragmentShader);
-    if (!shaderProgram.is_Compiled())
+    
     {
-        std::cerr << "Can't create shader program!" << std::endl;
-    }
+        ResourceManager resourceManager(argv[0]);
+        auto pDefaultShaderProgram = resourceManager.loadShaders("DefaultShader", "res/shaders/vertex.txt", "res/shaders/fragment.txt");
+        if (!pDefaultShaderProgram)
+        {
+            std::cerr << "Can't create shader program: " << "DefaultShader" << std::endl;
+            return -1;
+        }
 
-    //нужно передать теперь наши шейдеры в видеокарту
-    GLuint points_vbo = 0;
-    glGenBuffers(1, &points_vbo); //гененерирует 1 виртекс буффер объект и записывает её по указателю
-    glBindBuffer(GL_ARRAY_BUFFER, points_vbo); //подключили буффер и сделали текущим
-    glBufferData(GL_ARRAY_BUFFER, sizeof(point), point, GL_STATIC_DRAW); //заполяем текущий буффер информацией (а текущим стал тот, что забиндили только что
-    //далее все тоже самое но для цветов
-    GLuint colors_vbo = 0;
-    glGenBuffers(1, &colors_vbo); 
-    glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-    //теперь у нас есть два виртексных буффера в памяти видеокарты
+        /*std::string vertexShader; // (vertex_shader);
+        std::string fragmentShader; // (fragment_shader);
+        Renderer::ShaderProgram shaderProgram(vertexShader, fragmentShader);
+        if (!shaderProgram.is_Compiled())
+        {
+            std::cerr << "Can't create shader program!" << std::endl;
+        }*/
 
-    //далее укажем видеокарте че делать с этими шейдерами и буфферами
-    GLuint vao = 0;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+        //нужно передать теперь наши шейдеры в видеокарту
+        GLuint points_vbo = 0;
+        glGenBuffers(1, &points_vbo); //гененерирует 1 виртекс буффер объект и записывает её по указателю
+        glBindBuffer(GL_ARRAY_BUFFER, points_vbo); //подключили буффер и сделали текущим
+        glBufferData(GL_ARRAY_BUFFER, sizeof(point), point, GL_STATIC_DRAW); //заполяем текущий буффер информацией (а текущим стал тот, что забиндили только что
+        //далее все тоже самое но для цветов
+        GLuint colors_vbo = 0;
+        glGenBuffers(1, &colors_vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+        //теперь у нас есть два виртексных буффера в памяти видеокарты
 
-    //включаем слои для позиций и цветов, ну то есть оперируем с буфферами
-    glEnableVertexAttribArray(0); //включили нулевую позицию
-    glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-    glEnableVertexAttribArray(1); //включили нулевую позицию
-    glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-    //с шейдерами закончили далее необходима отрисовка, она будет производиться в цикле
-
-    /* цикл отрисовки (пока окно не должно быть закрыто, оно и не будет!) */
-    while (!glfwWindowShouldClose(pwindow))
-    {
-        /* Рендеринг */
-        glClear(GL_COLOR_BUFFER_BIT);
-        //подключим шейдер, который хотим использовать для рисования
-        shaderProgram.use();
-        //подключаем то, что хотим отрисовать
+        //далее укажем видеокарте че делать с этими шейдерами и буфферами
+        GLuint vao = 0;
+        glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
-        //сама команда отрисовки
-        glDrawArrays(GL_TRIANGLES, 0, 3);
 
-        /* буфферная отрисовка (задний буффер и передний буффер) а эта команда меняет буффера местами*/
-        glfwSwapBuffers(pwindow);
+        //включаем слои для позиций и цветов, ну то есть оперируем с буфферами
+        glEnableVertexAttribArray(0); //включили нулевую позицию
+        glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-        /* Мы позволяем обработать все ивенты следующей командой */
-        glfwPollEvents();
+        glEnableVertexAttribArray(1); //включили нулевую позицию
+        glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+        //с шейдерами закончили далее необходима отрисовка, она будет производиться в цикле
+
+        /* цикл отрисовки (пока окно не должно быть закрыто, оно и не будет!) */
+        while (!glfwWindowShouldClose(pwindow))
+        {
+            /* Рендеринг */
+            glClear(GL_COLOR_BUFFER_BIT);
+            //подключим шейдер, который хотим использовать для рисования
+            pDefaultShaderProgram->use();
+            //подключаем то, что хотим отрисовать
+            glBindVertexArray(vao);
+            //сама команда отрисовки
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+
+            /* буфферная отрисовка (задний буффер и передний буффер) а эта команда меняет буффера местами*/
+            glfwSwapBuffers(pwindow);
+
+            /* Мы позволяем обработать все ивенты следующей командой */
+            glfwPollEvents();
+        }
     }
-
     glfwTerminate(); //ну это деструктор (освобождение памяти)
     return 0;
 }
