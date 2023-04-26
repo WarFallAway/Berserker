@@ -1,6 +1,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+
+#include "Renderer/ShaderProgram.h"
+
 extern "C"
 _declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
 
@@ -96,22 +99,13 @@ int main(void)
 	
 	glClearColor(1, 1, 0, 1);
 	
-    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vs, 1, &vertex_shader, nullptr); //показали где брать код шейдеров для предыдущей переменной
-    glCompileShader(vs);
-
-    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fs, 1, &fragment_shader, nullptr);
-    glCompileShader(fs);
-
-    GLuint shader_program = glCreateProgram(); //возвращает идентификатор программы
-    glAttachShader(shader_program, vs);
-    glAttachShader(shader_program, fs);
-    glLinkProgram(shader_program);
-
-    glDeleteShader(vs); //освобождает память от шейдера после окончания его работы
-    glDeleteShader(fs);
-
+    std::string vertexShader(vertex_shader);
+    std::string fragmentShader(fragment_shader);
+    Renderer::ShaderProgram shaderProgram(vertexShader, fragmentShader);
+    if (!shaderProgram.is_Compiled())
+    {
+        std::cerr << "Can't create shader program!" << std::endl;
+    }
 
     //нужно передать теперь наши шейдеры в видеокарту
     GLuint points_vbo = 0;
@@ -147,7 +141,7 @@ int main(void)
         /* Рендеринг */
         glClear(GL_COLOR_BUFFER_BIT);
         //подключим шейдер, который хотим использовать для рисования
-        glUseProgram(shader_program);
+        shaderProgram.use();
         //подключаем то, что хотим отрисовать
         glBindVertexArray(vao);
         //сама команда отрисовки
