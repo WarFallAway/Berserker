@@ -22,7 +22,7 @@ const char* vertex_shader =
 "#version 460\n"
 "layout(location = 0) in vec3 vertex_position;"
 "layout(location = 1) in vec3 vertex_color;"
-"out vec color"
+"out vec3 color;"
 "void main() {"
 "   color = vertex_color;"
 "   gl_Position = vec4(vertex_position, 1.0f);"
@@ -94,7 +94,7 @@ int main(void)
     std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl; //информация о версии опенгл
 	
 	
-	glClearColor(0, 1, 0, 1);
+	glClearColor(1, 1, 0, 1);
 	
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vs, 1, &vertex_shader, nullptr); //показали где брать код шейдеров для предыдущей переменной
@@ -107,16 +107,51 @@ int main(void)
     GLuint shader_program = glCreateProgram(); //возвращает идентификатор программы
     glAttachShader(shader_program, vs);
     glAttachShader(shader_program, fs);
-    glLineWidth(shader_program);
+    glLinkProgram(shader_program);
 
-    glDeleteShader(vs);
+    glDeleteShader(vs); //освобождает память от шейдера после окончания его работы
     glDeleteShader(fs);
+
+
+    //нужно передать теперь наши шейдеры в видеокарту
+    GLuint points_vbo = 0;
+    glGenBuffers(1, &points_vbo); //гененерирует 1 виртекс буффер объект и записывает её по указателю
+    glBindBuffer(GL_ARRAY_BUFFER, points_vbo); //подключили буффер и сделали текущим
+    glBufferData(GL_ARRAY_BUFFER, sizeof(point), point, GL_STATIC_DRAW); //заполяем текущий буффер информацией (а текущим стал тот, что забиндили только что
+    //далее все тоже самое но для цветов
+    GLuint colors_vbo = 0;
+    glGenBuffers(1, &colors_vbo); 
+    glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+    //теперь у нас есть два виртексных буффера в памяти видеокарты
+
+    //далее укажем видеокарте че делать с этими шейдерами и буфферами
+    GLuint vao = 0;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    //включаем слои для позиций и цветов, ну то есть оперируем с буфферами
+    glEnableVertexAttribArray(0); //включили нулевую позицию
+    glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+    glEnableVertexAttribArray(1); //включили нулевую позицию
+    glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+    //с шейдерами закончили далее необходима отрисовка, она будет производиться в цикле
 
     /* цикл отрисовки (пока окно не должно быть закрыто, оно и не будет!) */
     while (!glfwWindowShouldClose(pwindow))
     {
         /* Рендеринг */
         glClear(GL_COLOR_BUFFER_BIT);
+        //подключим шейдер, который хотим использовать для рисования
+        glUseProgram(shader_program);
+        //подключаем то, что хотим отрисовать
+        glBindVertexArray(vao);
+        //сама команда отрисовки
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         /* буфферная отрисовка (задний буффер и передний буффер) а эта команда меняет буффера местами*/
         glfwSwapBuffers(pwindow);
