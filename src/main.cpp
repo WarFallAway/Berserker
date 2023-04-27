@@ -87,6 +87,8 @@ int main(int argc, char* argv[])
             return -1;
         }
 
+        resourceManager.loadTexture("DefaultTexture", "res/textures/testTexture.png");
+
         /*std::string vertexShader; // (vertex_shader);
         std::string fragmentShader; // (fragment_shader);
         Renderer::ShaderProgram shaderProgram(vertexShader, fragmentShader);
