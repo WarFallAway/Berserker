@@ -6,7 +6,7 @@
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
+#define STB_ONLY_PNG
 #include "stb_image.h"
 
 ResourceManager::ResourceManager(const std::string& executablePath)
@@ -65,7 +65,7 @@ std::shared_ptr<Renderer::ShaderProgram> ResourceManager::getShaderProgram(const
 	return nullptr;
 }
 
-void ResourceManager::loadTexture(const std::string& textureName, const std::string& texturePath)
+std::shared_ptr<Renderer::Texture2D> ResourceManager::loadTexture(const std::string& textureName, const std::string& texturePath)
 {
 	int channels = 0; //количество каналов
 	int width = 0;
@@ -76,8 +76,24 @@ void ResourceManager::loadTexture(const std::string& textureName, const std::str
 	if (!pixels)
 	{
 		std::cerr << "Can't load image: " << texturePath << std::endl;
-		return;
+		return nullptr;
 	}
+	std::shared_ptr<Renderer::Texture2D>  newTexture = m_textures.emplace(textureName,
+																			std::make_shared<Renderer::Texture2D>(width, height, pixels,
+																											channels,
+																											GL_NEAREST,
+																										GL_CLAMP_TO_EDGE)).first->second;
 
 	stbi_image_free(pixels); //освобождение памяти
+	return newTexture;
+}
+
+std::shared_ptr<Renderer::Texture2D> ResourceManager::getTexture(const std::string& textureName)
+{
+	TexturesMap::const_iterator it = m_textures.find(textureName);
+	if (it != m_textures.end()) {
+		return it->second;
+	}
+	std::cerr << "Can't find texture: " << textureName << std::endl;
+	return nullptr;
 }
