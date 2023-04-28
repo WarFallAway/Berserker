@@ -1,6 +1,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <glm/vec2.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "Renderer/ShaderProgram.h"
 #include "Renderer/Texture2D.h"
@@ -11,9 +14,9 @@ extern "C"
 _declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
 
 GLfloat point[] = {
-    0.0f, 0.5f, 0.0f,
-    0.5f, -0.5f, 0.0f,
-    -0.5f, -0.5f, 0.0f
+    0.0f, 50.f, 0.0f,
+    50.f, -50.f, 0.0f,
+    -50.f, -50.f, 0.0f
 }; //координаты точек
 
 GLfloat colors[] = {
@@ -29,14 +32,13 @@ GLfloat texCoord[] = {
 }; //массив для координат текстуры (левый нижний угол модели (0, 0) и по аналогии в нормированной системе координит
 
 
+glm::ivec2 g_windowSize(640, 400);
 
-int g_windowSizeX = 640;
-int g_windowSizeY = 480;
 
 void glfwSetWindowSizeCallback(GLFWwindow* pWindow, int Width, int Height) {
-    g_windowSizeX = Width;
-    g_windowSizeY = Height;
-    glViewport(0, 0, g_windowSizeX, g_windowSizeY); //отрисовка от начала координат (левый нижний угол)
+    g_windowSize.x = Width;
+    g_windowSize.y = Height;
+    glViewport(0, 0, Width, Height); //отрисовка от начала координат (левый нижний угол)
 }
 
 void glfwKeyCallback(GLFWwindow* pWindow, int key, int scancode, int action, int mode) {
@@ -59,7 +61,7 @@ int main(int argc, char* argv[])
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6); //указание версии опенжеэль
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //подмножество функций опенжеэля
     
-    GLFWwindow* pwindow = glfwCreateWindow(g_windowSizeX, g_windowSizeY, "Berserker", nullptr, nullptr); //создание окон96
+    GLFWwindow* pwindow = glfwCreateWindow(g_windowSize.x, g_windowSize.y, "Berserker", nullptr, nullptr); //создание окон96
     if (!pwindow)
     {
         std::cout << "OKNA96 can't to create((\n";
@@ -140,6 +142,17 @@ int main(int argc, char* argv[])
         pDefaultShaderProgram->use();
         pDefaultShaderProgram->setInt("tex", 0);
 
+
+        glm::mat4 modelMatrix_1 = glm::mat4(1.f);
+        modelMatrix_1 = glm::translate(modelMatrix_1, glm::vec3(100.f, 50.f, 0.f));
+        glm::mat4 modelMatrix_2 = glm::mat4(1.f);
+        modelMatrix_2 = glm::translate(modelMatrix_2, glm::vec3(590.f, 50.f, 0.f));
+        
+        
+        glm::mat4 projectionMatrix = glm::ortho(0.0f, static_cast<float>(g_windowSize.x), 0.0f, static_cast<float>(g_windowSize.y), -100.f, 100.f);
+
+        pDefaultShaderProgram->setMatrix4("projectionMat", projectionMatrix);
+
         //с шейдерами закончили далее необходима отрисовка, она будет производиться в цикле
 
         /* цикл отрисовки (пока окно не должно быть закрыто, оно и не будет!) */
@@ -155,8 +168,10 @@ int main(int argc, char* argv[])
             tex->bind();
 
             //сама команда отрисовки
+            pDefaultShaderProgram->setMatrix4("modelMat", modelMatrix_1);
             glDrawArrays(GL_TRIANGLES, 0, 3);
-
+            pDefaultShaderProgram->setMatrix4("modelMat", modelMatrix_2);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
             /* буфферная отрисовка (задний буффер и передний буффер) а эта команда меняет буффера местами*/
             glfwSwapBuffers(pwindow);
 

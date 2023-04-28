@@ -1,4 +1,5 @@
 #include "ShaderProgram.h"
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
 namespace Renderer {
@@ -89,7 +90,11 @@ namespace Renderer {
 		m_isCompiled = shaderProgram.m_isCompiled;
 
 		shaderProgram.m_ID = 0;
-		shaderProgram.m_isCompiled = false;
-		
+		shaderProgram.m_isCompiled = false;	
 	}
+	void ShaderProgram::setMatrix4(const std::string& name, const glm::mat4& matrix)
+	{
+		glUniformMatrix4fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(matrix));
+	}
+
 }
