@@ -6,7 +6,7 @@
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
-#define STB_ONLY_PNG
+//#define STB_ONLY_PNG
 #include "stb_image.h"
 
 ResourceManager::ResourceManager(const std::string& executablePath)

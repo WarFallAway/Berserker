@@ -26,9 +26,5 @@ namespace Renderer {
 		GLenum m_mode;
 		unsigned int m_width;
 		unsigned int m_height;
-
 	};
-
-
-
 }

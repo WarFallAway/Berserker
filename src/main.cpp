@@ -3,7 +3,9 @@
 #include <iostream>
 
 #include "Renderer/ShaderProgram.h"
+#include "Renderer/Texture2D.h"
 #include "Resources/ResourceManager.h"
+
 
 extern "C"
 _declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -18,9 +20,13 @@ GLfloat colors[] = {
     1.0f, 0.0f, 0.0f,
     0.0f, 1.0f, 0.0f,
     0.0f, 0.0f, 1.0f
-}; //массив для цветов точек
+}; //массив для РГБ координат цветов
 
-
+GLfloat texCoord[] = {
+    0.5f, 1.0f,
+    1.0f, 0.0f,
+    0.0f, 0.0f
+}; //массив для координат текстуры (левый нижний угол модели (0, 0) и по аналогии в нормированной системе координит
 
 
 
@@ -87,7 +93,7 @@ int main(int argc, char* argv[])
             return -1;
         }
 
-        resourceManager.loadTexture("DefaultTexture", "res/textures/testTexture.png");
+        auto tex = resourceManager.loadTexture("DefaultTexture", "res/textures/wall.jpg");
 
         /*std::string vertexShader; // (vertex_shader);
         std::string fragmentShader; // (fragment_shader);
@@ -108,6 +114,10 @@ int main(int argc, char* argv[])
         glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
         //теперь у нас есть два виртексных буффера в памяти видеокарты
+        GLuint texCoord_vbo = 0;
+        glGenBuffers(1, &texCoord_vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, texCoord_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(texCoord), texCoord, GL_STATIC_DRAW);
 
         //далее укажем видеокарте че делать с этими шейдерами и буфферами
         GLuint vao = 0;
@@ -119,9 +129,16 @@ int main(int argc, char* argv[])
         glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-        glEnableVertexAttribArray(1); //включили нулевую позицию
+        glEnableVertexAttribArray(1); //включили первую позицию
         glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+        glEnableVertexAttribArray(2); //включили нулевую позицию
+        glBindBuffer(GL_ARRAY_BUFFER, texCoord_vbo);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+        pDefaultShaderProgram->use();
+        pDefaultShaderProgram->setInt("tex", 0);
 
         //с шейдерами закончили далее необходима отрисовка, она будет производиться в цикле
 
@@ -134,6 +151,9 @@ int main(int argc, char* argv[])
             pDefaultShaderProgram->use();
             //подключаем то, что хотим отрисовать
             glBindVertexArray(vao);
+
+            tex->bind();
+
             //сама команда отрисовки
             glDrawArrays(GL_TRIANGLES, 0, 3);
 
