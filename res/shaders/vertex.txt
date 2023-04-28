@@ -8,7 +8,8 @@ out vec2 texCoords;
 uniform mat4 modelMat;
 uniform  mat4 projectionMat;
 
-void main() {
+void main() 
+{
    color = vertex_color;
    texCoords = texture_coords;
    gl_Position = projectionMat * modelMat * vec4(vertex_position, 1.0f);
